@@ -12,13 +12,14 @@ datasource db {
 
 model User {
   id                    String         @id @default(uuid())
-  name                  String
+  firstName             String
+  lastName              String
   email                 String         @unique
   password              String
   image                 String?
   username              String?        @unique
   gender                Genders        @default(Male)
-  phoneNumber           String?
+  phoneNumber           String?        @unique
   bio                   String?        @db.VarChar(255)
   dateOfBirth           DateTime?
   provider              String?
@@ -31,10 +32,193 @@ model User {
   websocketId           String?        @db.VarChar(255)
   emailVerifiedAt       DateTime?
   phoneNumberVerifiedAt DateTime?
+  Country               Country?       @relation(fields: [countryId], references: [id])
+  countryId             String?
+  State                 State?         @relation(fields: [stateId], references: [id])
+  stateId               String?
+  City                  City?          @relation(fields: [cityId], references: [id])
+  cityId                String?
+  accountType           AccountTypes   @default(user)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   messages              Message[]
   conversations         Conversation[]
+  payments              Payment[]
+  transactions          Transaction[]
+  rideActivities        RideActivity[]
+  vehicle               Vehicle?
+  Review                Review[]
+  driverData            DriverData?
+}
+
+model DriverData {
+  id             String   @id @default(uuid())
+  user           User     @relation(fields: [userId], references: [id])
+  userId         String   @unique
+  driversLicense String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Currency {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  symbol      String        @unique
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Ride        Ride[]
+  Payment     Payment[]
+  Transaction Transaction[]
+}
+
+model VehicleCategory {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Vehicle   Vehicle[]
+}
+
+model Vehicle {
+  id                String          @id @default(uuid())
+  user              User            @relation(fields: [userId], references: [id])
+  userId            String          @unique
+  vehicleCategory   VehicleCategory @relation(fields: [vehicleCategoryId], references: [id])
+  vehicleCategoryId String
+  brand             String
+  plateNumber       String
+  image             String
+  active            Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  rides             Ride[]
+}
+
+model Country {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  shortCode String   @unique
+  phoneCode String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  states    State[]
+  users     User[]
+}
+
+model State {
+  id        String   @id @default(uuid())
+  name      String
+  shortCode String   @unique
+  country   Country  @relation(fields: [countryId], references: [id])
+  countryId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cities    City[]
+  users     User[]
+}
+
+model City {
+  id        String   @id @default(uuid())
+  name      String
+  shortCode String   @unique
+  state     State    @relation(fields: [stateId], references: [id])
+  stateId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+}
+
+model Ride {
+  id                   String         @id @default(uuid())
+  name                 String         @unique
+  vehicle              Vehicle?       @relation(fields: [vehicleId], references: [id])
+  vehicleId            String?
+  pickupLongitude      Decimal
+  pickupLatitude       Decimal
+  pickupAddress        String
+  destinationLongitude Decimal
+  destinationLatitude  Decimal
+  destinationAddress   String
+  estimatedTime        Int
+  currency             Currency       @relation(fields: [currencyId], references: [id])
+  currencyId           String
+  estimatedFee         Decimal
+  paymentMethod        PaymentMethod  @default(cash)
+  status               RideStatus     @default(pending)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  payments             Payment[]
+  activities           RideActivity[]
+  Review               Review[]
+}
+
+model RideActivity {
+  id        String   @id @default(uuid())
+  ride      Ride     @relation(fields: [rideId], references: [id])
+  rideId    String
+  activity  String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  user          User          @relation(fields: [userId], references: [id])
+  userId        String
+  reference     String        @unique
+  currency      Currency      @relation(fields: [currencyId], references: [id])
+  currencyId    String
+  amount        Decimal
+  gateway       String
+  fee           Decimal       @default(0)
+  discount      Decimal       @default(0)
+  status        PaymentStatus @default(pending)
+  metadata      Json?
+  transaction   Transaction?  @relation(fields: [transactionId], references: [id])
+  transactionId String?
+  ride          Ride?         @relation(fields: [rideId], references: [id])
+  rideId        String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Transaction {
+  id         String            @id @default(uuid())
+  user       User              @relation(fields: [userId], references: [id])
+  userId     String
+  reference  String            @unique
+  tx_type    TransactionType   @default(debit)
+  currency   Currency          @relation(fields: [currencyId], references: [id])
+  currencyId String
+  amount     Decimal
+  channel    String
+  status     TransactionStatus @default(pending)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  payments   Payment[]
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  ride      Ride     @relation(fields: [rideId], references: [id])
+  rideId    String
+  rating    Int
+  content   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Config {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  value     String
+  type      String   @default("system")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Conversation {
@@ -59,4 +243,42 @@ model Message {
 enum Genders {
   Male
   Female
+}
+
+enum AccountTypes {
+  user
+  rider
+  admin
+}
+
+enum TransactionType {
+  debit
+  credit
+}
+
+enum TransactionStatus {
+  pending
+  cancelled
+  declined
+  completed
+}
+
+enum PaymentMethod {
+  cash
+  card
+}
+
+enum PaymentStatus {
+  pending
+  cancelled
+  declined
+  completed
+}
+
+enum RideStatus {
+  pending
+  inProgress @map("in progress")
+  cancelled
+  declined
+  completed
 }
