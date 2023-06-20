@@ -7,5 +7,8 @@ export class SignUpDto {
   password: string;
 
   @ApiProperty()
-  name: string;
+  firstName: string;
+
+  @ApiProperty()
+  lastName: string;
 }

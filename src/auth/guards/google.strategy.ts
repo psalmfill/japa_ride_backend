@@ -1,4 +1,4 @@
-import { UsersService } from 'src/users/users.service';
+import { UsersService } from '../../users/users.service';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -28,17 +28,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     data,
     done: Function,
   ) {
-    console.log('dddd', data);
-
     try {
+      const name = data.name ? data.name.split('') : null;
       const createUser = this.usersService.createOrUpdate({
         provider: data.provider,
         email: data.emails[0].value,
         providerId: data.id,
         referralCode: await this.usersService.generateReferralCode(),
         referrerId: null,
-        name: data.profile.givenName,
-        password: this.usersService.makeString(32),
+        password: null,
+        firstName: name ? name[0] : '',
+        lastName: name ? name[name.length - 1] : '',
       });
 
       const user = await this.usersService.findOneByProviderId(data.id);

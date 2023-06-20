@@ -17,6 +17,7 @@ export class UsersService {
   }
 
   async createOrUpdate(createUserDto: CreateUserDto): Promise<UserModel> {
+    const { referrerId, ...userDto } = createUserDto;
     const user = await this.prismaService.user.findFirst({
       where: {
         email: createUserDto.email,
@@ -25,21 +26,24 @@ export class UsersService {
     if (!user) {
       return this.prismaService.user.create({
         data: {
-          ...createUserDto,
+          ...userDto,
           referralCode: await this.generateReferralCode(),
+          referrer: {
+            connect: { id: referrerId },
+          },
         },
       });
     }
     // update the user
     // remove the password field
     const { password, referralCode, ...data } = createUserDto;
-    if (
-      typeof data.name === 'object' &&
-      !Array.isArray(data.name) &&
-      data.name !== null
-    ) {
-      data.name = data['name']['givenName'];
-    }
+    // if (
+    //   typeof data.firstName === 'object' &&
+    //   !Array.isArray(data.name) &&
+    //   data.name !== null
+    // ) {
+    //   data.name = data['name']['givenName'];
+    // }
 
     return this.prismaService.user.update({
       where: { id: user.id },

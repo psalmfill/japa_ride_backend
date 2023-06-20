@@ -1,7 +1,13 @@
-import { Genders, User as UserModel } from '@prisma/client';
+import { AccountTypes, Genders, User as UserModel } from '@prisma/client';
 export class User implements UserModel {
+  firstName: string;
+  lastName: string;
+  countryId: string;
+  stateId: string;
+  cityId: string;
+  accountType: AccountTypes;
+  roleId: string;
   id: string;
-  name: string;
   email: string;
   password: string;
   image: string;

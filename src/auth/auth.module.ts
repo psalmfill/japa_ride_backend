@@ -9,7 +9,7 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './guards/jwt-strategy';
-import { GoogleStrategy } from './dto/google.strategy';
+import { GoogleStrategy } from './guards/google.strategy';
 
 @Module({
   imports: [
