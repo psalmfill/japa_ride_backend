@@ -3,7 +3,7 @@ import { Genders, PaymentMethod, RideStatus } from '@prisma/client';
 
 export class CreateRideDto {
   @ApiProperty()
-  vehicleId: string;
+  vehicleId?: string;
 
   userId: string;
 
@@ -33,6 +33,9 @@ export class CreateRideDto {
 
   @ApiProperty()
   estimatedFee: string;
+
+  @ApiProperty()
+  destinationAddress: string;
 
   @ApiProperty()
   paymentMethod: PaymentMethod;

@@ -11,4 +11,7 @@ export class SignUpDto {
 
   @ApiProperty()
   lastName: string;
+
+  @ApiProperty()
+  accountType?: string;
 }

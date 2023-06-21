@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from './guards/jwt-guard';
 import { AuthGuard } from '@nestjs/passport';
+import { AccountTypes } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -25,6 +26,13 @@ export class AuthController {
 
   @Post('sign-up')
   signUp(@Body() signUpDto: SignUpDto) {
+    const result = this.authService.signUp(signUpDto);
+    return result;
+  }
+
+  @Post('rider/sign-up')
+  signUpRider(@Body() signUpDto: SignUpDto) {
+    signUpDto.accountType = AccountTypes.rider;
     const result = this.authService.signUp(signUpDto);
     return result;
   }

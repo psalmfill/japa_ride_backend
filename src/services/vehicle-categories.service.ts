@@ -12,7 +12,7 @@ export class VehicleCategoriesService {
   }
 
   findOne(id: string) {
-    return this.prismaService.config.findFirst({
+    return this.prismaService.vehicleCategory.findFirst({
       where: { id: id },
     });
   }
@@ -31,7 +31,7 @@ export class VehicleCategoriesService {
   }
 
   async remove(id: string) {
-    return this.prismaService.vehicle.delete({
+    return this.prismaService.vehicleCategory.delete({
       where: { id },
     });
   }

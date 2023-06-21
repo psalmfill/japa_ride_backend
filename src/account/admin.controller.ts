@@ -7,7 +7,11 @@ import {
   Param,
   Patch,
   Post,
+  Query,
+  Req,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-guard';
@@ -18,14 +22,21 @@ import { CreateCurrencyDto } from 'src/dto/create-currency.dto';
 import { CreateRoleDto } from 'src/dto/create-role.dto';
 import { CreateStateDto } from 'src/dto/create-state.dto';
 import { CreateVehicleCategoryDto } from 'src/dto/create-vehicle-category.dto';
+import { PaginationDto } from 'src/dto/pagination.dto';
 import { UpdateCityDto } from 'src/dto/update-city.dto';
 import { UpdateCountryDto } from 'src/dto/update-country.dto';
 import { UpdateStateDto } from 'src/dto/update-state.dto';
 import { UpdateVehicleCategoryDto } from 'src/dto/update-vehicle-category.dto';
+import { formatPagination } from 'src/helpers';
 import { ConfigsService } from 'src/services/configs.service';
 import { CurrenciesService } from 'src/services/currencies.service';
 import { LocationsService } from 'src/services/locations.service';
+import { PaymentsService } from 'src/services/payments.service';
+import { RidesService } from 'src/services/rides.service';
 import { RolesService } from 'src/services/roles.service';
+import { VehiclesService } from 'src/services/vehicles.service';
+import { CreateUserDto } from 'src/users/dto/create-user.dto';
+import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { UsersService } from 'src/users/users.service';
 
 @ApiBearerAuth('JWT')
@@ -39,6 +50,9 @@ export class AdminController {
     private readonly configsService: ConfigsService,
     private readonly vehicleCategoriesService: VehicleCategoriesService,
     private readonly rolesService: RolesService,
+    private readonly vehiclesService: VehiclesService,
+    private readonly ridesService: RidesService,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
   @Post('configs')
@@ -67,6 +81,31 @@ export class AdminController {
   @Delete('configs/:id')
   removeConfig(@Param('id') id: string) {
     return this.configsService.remove(id);
+  }
+
+  @Post()
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(id, updateUserDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
   }
 
   // currency
@@ -252,5 +291,65 @@ export class AdminController {
   @Delete('roles/:id')
   removeRole(@Param('id') id: string) {
     return this.rolesService.remove(id);
+  }
+
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
+  @Get('vehicles')
+  async getVehicles(@Query() pagination: PaginationDto) {
+    const response = await this.vehiclesService.findMany(
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+
+  @Get('vehicles/:id')
+  getVehicle(@Param('id') id: string) {
+    return this.vehiclesService.findOne(id);
+  }
+
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
+  @Get('payments')
+  async getPayments(@Req() req, @Query() pagination: PaginationDto) {
+    const response = await this.paymentsService.findMany(
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+
+  @Get('payments/:id')
+  getPayment(@Req() req, @Param('id') id: string) {
+    return this.paymentsService.findOne(id);
+  }
+
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
+  @Get('rides')
+  async getRides(@Req() req, @Query() pagination: PaginationDto) {
+    const response = await this.ridesService.findMany(
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+
+  @Get('rides/:id')
+  getRide(@Req() req, @Param('id') id: string) {
+    return this.ridesService.findOne(id);
   }
 }

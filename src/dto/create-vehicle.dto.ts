@@ -19,4 +19,10 @@ export class CreateVehicleDto {
 
   @ApiProperty()
   active?: boolean;
+
+  @ApiProperty()
+  userId: string;
+
+  @ApiProperty()
+  color: string;
 }

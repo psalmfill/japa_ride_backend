@@ -13,6 +13,8 @@ import { VehicleCategoriesService } from 'src/services/vehicle-categories.servic
 import { VehiclesService } from 'src/services/vehicles.service';
 import { CurrenciesService } from 'src/services/currencies.service';
 import { ConfigsService } from 'src/services/configs.service';
+import { RiderController } from './rider.controller';
+import { PaymentsService } from 'src/services/payments.service';
 
 @Module({
   imports: [AuthModule],
@@ -27,7 +29,8 @@ import { ConfigsService } from 'src/services/configs.service';
     VehiclesService,
     CurrenciesService,
     ConfigsService,
+    PaymentsService,
   ],
-  controllers: [AccountController, AdminController],
+  controllers: [AccountController, AdminController, RiderController],
 })
 export class AccountModule {}
