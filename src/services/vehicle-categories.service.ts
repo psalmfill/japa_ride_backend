@@ -12,14 +12,20 @@ export class VehicleCategoriesService {
   }
 
   findOne(id: string) {
-    return this.prismaService.vehicleCategory.findFirst({
+    return this.prismaService.vehicleCategory.findFirstOrThrow({
       where: { id: id },
     });
   }
 
   create(createVehicleCategoryDto: CreateVehicleCategoryDto) {
+    const { currencyId, ...data } = createVehicleCategoryDto;
     return this.prismaService.vehicleCategory.create({
-      data: createVehicleCategoryDto,
+      data: {
+        ...data,
+        currency: {
+          connect: { id: currencyId },
+        },
+      },
     });
   }
 

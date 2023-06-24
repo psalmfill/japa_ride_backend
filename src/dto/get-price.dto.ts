@@ -1,14 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Genders, PaymentMethod, RideStatus } from '@prisma/client';
 
-export class CreateRideDto {
+export class GetPriceDto {
   @ApiProperty()
   vehicleCategoryId: string;
-
-  @ApiProperty()
-  vehicleId?: string;
-
-  userId: string;
 
   @ApiProperty()
   pickupLongitude: number;
@@ -32,16 +27,5 @@ export class CreateRideDto {
   distance: number;
 
   @ApiProperty()
-  currencyId: string;
-
-  @ApiProperty()
-  estimatedFee: number;
-
-  @ApiProperty()
   destinationAddress: string;
-
-  @ApiProperty()
-  paymentMethod: PaymentMethod;
-
-  status: RideStatus;
 }

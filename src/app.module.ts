@@ -25,6 +25,8 @@ import { RolesService } from './services/roles.service';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { BullModule } from '@nestjs/bull';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { TasksService } from './services/tasks.service';
+import { RideGateway } from './gateways/ride.gateway';
 
 @Module({
   imports: [
@@ -88,6 +90,8 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
     VehicleCategoriesService,
     VehiclesService,
     RolesService,
+    TasksService,
+    RideGateway,
   ],
   exports: [PrismaService],
 })

@@ -86,11 +86,11 @@ export class RiderController {
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
-    //   create a decline record for the ride
+    //   create a accept record for the ride
     const rideActivity = await this.ridesService.updateRideActivity(
       id,
       req.user.id,
-      RideActivity.declinedRide,
+      RideActivity.acceptedRide,
     );
     const updatedRide = await this.ridesService.update(id, {
       status: RideStatus.inProgress,
@@ -105,7 +105,7 @@ export class RiderController {
     const ride = await this.ridesService.findOneForRider(req.user.id, id);
     if (!ride || !ride.vehicle || ride.vehicle.userId !== req.user.id) {
       throw new HttpException(
-        'You cannot decline this ride',
+        'You cannot update this ride',
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -132,7 +132,7 @@ export class RiderController {
     const ride = await this.ridesService.findOneForRider(req.user.id, id);
     if (!ride || !ride.vehicle || ride.vehicle.userId !== req.user.id) {
       throw new HttpException(
-        'You cannot decline this ride',
+        'You cannot start this ride',
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -149,7 +149,7 @@ export class RiderController {
       req.user.id,
       RideActivity.startedRide,
     );
-    //  todo notify user of accepted ride
+    //  todo notify user of ride started
 
     return rideActivity;
   }

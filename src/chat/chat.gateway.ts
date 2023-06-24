@@ -10,9 +10,7 @@ import {
 import { ChatService } from './chat.service';
 import { Server, Socket } from 'socket.io';
 import { UseGuards } from '@nestjs/common';
-import { WsGuard } from 'src/auth/dto/ws-guard';
-import { Conversation, Message } from '@prisma/client';
-import { PaginationDto } from 'src/dto/pagination.dto';
+import { WsGuard } from 'src/auth/guards/ws-guard';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
 

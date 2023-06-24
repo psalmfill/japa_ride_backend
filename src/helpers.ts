@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+import { extname } from 'path';
 import { PaginationDto } from './dto/pagination.dto';
 
 export const formatPagination = (data, paginate: PaginationDto) => {
@@ -11,3 +13,21 @@ export const formatPagination = (data, paginate: PaginationDto) => {
     },
   };
 };
+
+export const editFileName = (req, file, callback) => {
+  const name = file.originalname.split('.')[0];
+  const fileExtName = extname(file.originalname);
+  const randomName = randomUUID();
+  callback(null, `${randomName}${fileExtName}`);
+};
+
+export function getDistance(arg0: {
+  pickupLongitude: number;
+  pickupLatitude: number;
+  pickupAddress: string;
+  destinationLongitude: number;
+  destinationAddress: string;
+  destinationLatitude: number;
+}): number | PromiseLike<number> {
+  return 2;
+}

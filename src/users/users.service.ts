@@ -1,5 +1,5 @@
 import { PrismaService } from './../prisma/prisma.service';
-import { User as UserModel } from '@prisma/client';
+import { AccountTypes, User, User as UserModel } from '@prisma/client';
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -75,6 +75,19 @@ export class UsersService {
 
   remove(id: string) {
     return `This action removes a #${id} user`;
+  }
+
+  async findRiderWithinRange(
+    latitude: number,
+    longitude: number,
+    distanceInMile,
+  ): Promise<User> {
+    latitude = parseFloat(latitude.toFixed(3));
+    longitude = parseFloat(longitude.toFixed(3));
+    const userType: AccountTypes = AccountTypes.rider;
+    return await this.prismaService.$queryRaw`select "u".* from ( 
+        select *, ( 3959 * acos( cos( radians( ${latitude}) ) * cos( radians( "currentLatitude") ) * cos( radians( "currentLongitude") - radians( ${longitude}) ) + sin( radians(${latitude}) ) * sin( radians( "currentLatitude") ) ) ) 
+         AS "distance" from "User") as "u"   where  ("accountType"::text = ${userType} and "currentLatitude" is not null and "currentLongitude" is not null and "websocketId" is not null ) and "distance" <  ${distanceInMile} order by "distance" asc`;
   }
 
   async generateReferralCode() {

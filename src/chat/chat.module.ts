@@ -1,6 +1,6 @@
 import { JwtModule } from '@nestjs/jwt';
 import { UsersService } from './../users/users.service';
-import { WsGuard } from 'src/auth/dto/ws-guard';
+import { WsGuard } from 'src/auth/guards/ws-guard';
 import { PrismaService } from './../prisma/prisma.service';
 import { Module } from '@nestjs/common';
 import { ChatService } from './chat.service';

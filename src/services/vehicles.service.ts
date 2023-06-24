@@ -18,6 +18,14 @@ export class VehiclesService {
     });
   }
 
+  findRiderVehicle(userId: string) {
+    return this.prismaService.vehicle.findFirst({
+      where: {
+        userId,
+      },
+    });
+  }
+
   findOne(id: string) {
     return this.prismaService.vehicle.findFirst({
       where: { id: id },

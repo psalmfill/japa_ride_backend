@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { RideStatus } from '@prisma/client';
 import { CreateRideDto } from 'src/dto/create-ride.dto';
 import { UpdateRideDto } from 'src/dto/update-ride.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 export enum RideActivity {
   createdRide = 'User created ride',
+  riderAssigned = 'Rider assigned to ride',
   cancelledRide = 'User cancelled ride',
   declinedRide = 'Rider declined ride',
   acceptedRide = 'Rider accepted ride',
@@ -21,6 +23,7 @@ export class RidesService {
       include: {
         user: true,
         vehicle: true,
+        payments: true,
         currency: true,
         activities: {
           include: {
@@ -42,6 +45,7 @@ export class RidesService {
       include: {
         user: true,
         vehicle: true,
+        payments: true,
         currency: true,
         activities: {
           include: {
@@ -66,6 +70,7 @@ export class RidesService {
       include: {
         user: true,
         vehicle: true,
+        payments: true,
         currency: true,
         activities: {
           include: {
@@ -81,11 +86,34 @@ export class RidesService {
     });
   }
 
+  findManyByStatus(status: RideStatus) {
+    return this.prismaService.ride.findMany({
+      where: {
+        status,
+      },
+      include: {
+        user: true,
+        vehicle: true,
+        payments: true,
+        currency: true,
+        activities: {
+          include: {
+            user: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
   findOne(id: string) {
     return this.prismaService.ride.findFirst({
       where: { id: id },
       include: {
         user: true,
+        payments: true,
         vehicle: true,
         currency: true,
         activities: {
@@ -103,6 +131,7 @@ export class RidesService {
       include: {
         user: true,
         vehicle: true,
+        payments: true,
         currency: true,
         activities: {
           include: {
@@ -122,6 +151,7 @@ export class RidesService {
       include: {
         user: true,
         vehicle: true,
+        payments: true,
         currency: true,
         activities: {
           include: {
@@ -132,7 +162,8 @@ export class RidesService {
     });
   }
   async create(createRideDto: CreateRideDto) {
-    const { userId, vehicleId, currencyId, ...data } = createRideDto;
+    const { userId, vehicleId, vehicleCategoryId, currencyId, ...data } =
+      createRideDto;
 
     const ride = await this.prismaService.ride.create({
       data: {
@@ -142,6 +173,9 @@ export class RidesService {
         },
         user: {
           connect: { id: userId },
+        },
+        vehicleCategory: {
+          connect: { id: vehicleCategoryId },
         },
         activities: {
           create: {
@@ -153,6 +187,7 @@ export class RidesService {
       include: {
         user: true,
         vehicle: true,
+        payments: true,
         currency: true,
         activities: {
           include: {

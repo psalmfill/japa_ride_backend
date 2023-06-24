@@ -11,7 +11,7 @@ export class CurrenciesService {
   }
 
   findOne(id: string) {
-    return this.prismaService.currency.findFirst({
+    return this.prismaService.currency.findFirstOrThrow({
       where: { id: id },
     });
   }

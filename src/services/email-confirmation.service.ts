@@ -27,7 +27,7 @@ export class EmailConfirmationService {
       'EMAIL_CONFIRMATION_URL',
     )}?token=${token}`;
 
-    const text = `Welcome to the Japa Ride. To confirm the email address, click here: ${url}`;
+    const text = `Welcome to the Jappa Ride. To confirm the email address, click here: ${url}`;
 
     return this.emailService.sendMail({
       to: email,

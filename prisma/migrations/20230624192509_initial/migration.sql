@@ -67,6 +67,9 @@ CREATE TABLE "User" (
     "referralCode" TEXT NOT NULL,
     "referrerId" TEXT,
     "otpCounter" INTEGER NOT NULL DEFAULT 0,
+    "currentLatitude" DECIMAL(65,30),
+    "currentLongitude" DECIMAL(65,30),
+    "location" TEXT,
     "websocketId" VARCHAR(255),
     "emailVerifiedAt" TIMESTAMP(3),
     "phoneNumberVerifiedAt" TIMESTAMP(3),
@@ -107,6 +110,9 @@ CREATE TABLE "Currency" (
 CREATE TABLE "VehicleCategory" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "image" TEXT NOT NULL,
+    "currencyId" TEXT NOT NULL,
+    "basePrice" DECIMAL(65,30) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -169,6 +175,7 @@ CREATE TABLE "City" (
 -- CreateTable
 CREATE TABLE "Ride" (
     "id" TEXT NOT NULL,
+    "vehicleCategoryId" TEXT NOT NULL,
     "vehicleId" TEXT,
     "userId" TEXT NOT NULL,
     "pickupLongitude" DECIMAL(65,30) NOT NULL,
@@ -377,6 +384,9 @@ ALTER TABLE "User" ADD CONSTRAINT "User_roleId_fkey" FOREIGN KEY ("roleId") REFE
 ALTER TABLE "DriverData" ADD CONSTRAINT "DriverData_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "VehicleCategory" ADD CONSTRAINT "VehicleCategory_currencyId_fkey" FOREIGN KEY ("currencyId") REFERENCES "Currency"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Vehicle" ADD CONSTRAINT "Vehicle_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -387,6 +397,9 @@ ALTER TABLE "State" ADD CONSTRAINT "State_countryId_fkey" FOREIGN KEY ("countryI
 
 -- AddForeignKey
 ALTER TABLE "City" ADD CONSTRAINT "City_stateId_fkey" FOREIGN KEY ("stateId") REFERENCES "State"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Ride" ADD CONSTRAINT "Ride_vehicleCategoryId_fkey" FOREIGN KEY ("vehicleCategoryId") REFERENCES "VehicleCategory"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Ride" ADD CONSTRAINT "Ride_vehicleId_fkey" FOREIGN KEY ("vehicleId") REFERENCES "Vehicle"("id") ON DELETE SET NULL ON UPDATE CASCADE;

@@ -57,6 +57,9 @@ model User {
   referrer              User?          @relation("Referrals", fields: [referrerId], references: [id])
   referrals             User[]         @relation("Referrals")
   otpCounter            Int            @default(0)
+  currentLatitude       Decimal?
+  currentLongitude      Decimal?
+  location              String?
   websocketId           String?        @db.VarChar(255)
   emailVerifiedAt       DateTime?
   phoneNumberVerifiedAt DateTime?
@@ -92,22 +95,28 @@ model DriverData {
 }
 
 model Currency {
-  id           String        @id @default(uuid())
-  name         String        @unique
-  symbol       String        @unique
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  rides        Ride[]
-  payments     Payment[]
-  transactions Transaction[]
+  id                String            @id @default(uuid())
+  name              String            @unique
+  symbol            String            @unique
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  rides             Ride[]
+  payments          Payment[]
+  transactions      Transaction[]
+  vehicleCategories VehicleCategory[]
 }
 
 model VehicleCategory {
-  id        String    @id @default(uuid())
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  vehicles  Vehicle[]
+  id         String    @id @default(uuid())
+  name       String    @unique
+  image      String
+  currency   Currency  @relation(fields: [currencyId], references: [id])
+  currencyId String
+  basePrice  Decimal
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  vehicles   Vehicle[]
+  rides      Ride[]
 }
 
 model Vehicle {
@@ -162,10 +171,12 @@ model City {
 }
 
 model Ride {
-  id                   String         @id @default(uuid())
-  vehicle              Vehicle?       @relation(fields: [vehicleId], references: [id])
+  id                   String          @id @default(uuid())
+  vehicleCategory      VehicleCategory @relation(fields: [vehicleCategoryId], references: [id])
+  vehicleCategoryId    String
+  vehicle              Vehicle?        @relation(fields: [vehicleId], references: [id])
   vehicleId            String?
-  user                 User           @relation(fields: [userId], references: [id])
+  user                 User            @relation(fields: [userId], references: [id])
   userId               String
   pickupLongitude      Decimal
   pickupLatitude       Decimal
@@ -174,14 +185,14 @@ model Ride {
   destinationLatitude  Decimal
   destinationAddress   String
   estimatedTime        Int
-  distance             Decimal        @default(0)
-  currency             Currency       @relation(fields: [currencyId], references: [id])
+  distance             Decimal         @default(0)
+  currency             Currency        @relation(fields: [currencyId], references: [id])
   currencyId           String
   estimatedFee         Decimal
-  paymentMethod        PaymentMethod  @default(cash)
-  status               RideStatus     @default(pending)
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  paymentMethod        PaymentMethod   @default(cash)
+  status               RideStatus      @default(pending)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
   payments             Payment[]
   activities           RideActivity[]
   Review               Review[]

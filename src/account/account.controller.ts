@@ -1,3 +1,4 @@
+import { VehicleCategoriesService } from 'src/services/vehicle-categories.service';
 import { RideActivity, RidesService } from 'src/services/rides.service';
 import { CreateUserDto } from './../users/dto/create-user.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -7,25 +8,35 @@ import { JwtAuthGuard } from './../auth/guards/jwt-guard';
 import {
   Body,
   Controller,
+  FileTypeValidator,
   Get,
   HttpException,
   HttpStatus,
   Param,
+  ParseFilePipe,
   Patch,
   Post,
   Put,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { PaginationDto } from 'src/dto/pagination.dto';
-import { formatPagination } from 'src/helpers';
-import { RideStatus } from '@prisma/client';
+import { editFileName, formatPagination, getDistance } from 'src/helpers';
+import { PaymentMethod, PaymentStatus, RideStatus } from '@prisma/client';
 import { PaymentsService } from 'src/services/payments.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { existsSync, unlinkSync } from 'fs';
+import { CreateRideDto } from 'src/dto/create-ride.dto';
+import { randomUUID } from 'crypto';
+import { GetPriceDto } from 'src/dto/get-price.dto';
 
 @ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard)
@@ -35,6 +46,7 @@ export class AccountController {
     private accountService: AccountService,
     private readonly ridesService: RidesService,
     private readonly paymentsService: PaymentsService,
+    private readonly vehicleCategoriesService: VehicleCategoriesService,
   ) {}
 
   @Get('profile')
@@ -54,6 +66,49 @@ export class AccountController {
         const { password, ...user } = res;
         return user;
       });
+  }
+
+  @Post('update-profile-picture')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: editFileName,
+      }),
+    }),
+  )
+  @ApiResponse({ type: CreateUserDto })
+  updateProfilePicture(
+    @Req() req,
+    @Body() updateUserDto: UpdateUserDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          // new MaxFileSizeValidator({ maxSize: 1000 }),
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    try {
+      updateUserDto.image = file.path;
+      return this.accountService
+        .updateProfile(req.user.id, updateUserDto)
+        .then((res) => {
+          const { password, ...user } = res;
+          return user;
+        });
+    } catch (err) {
+      if (existsSync(file.path)) {
+        unlinkSync(file.path);
+      }
+
+      throw new HttpException(
+        'Could update profile image',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
   }
 
   @Post('change-password')
@@ -87,6 +142,67 @@ export class AccountController {
     return this.paymentsService.findOneForUser(req.user.id, id);
   }
 
+  @Get('get-price')
+  async getPrice(@Req() req, @Query() getPriceDto: GetPriceDto) {
+    const category = await this.vehicleCategoriesService.findOne(
+      getPriceDto.vehicleCategoryId,
+    );
+    getPriceDto.distance = await getDistance({
+      pickupLongitude: getPriceDto.pickupLongitude,
+      pickupLatitude: getPriceDto.pickupLatitude,
+      pickupAddress: getPriceDto.pickupAddress,
+      destinationLongitude: getPriceDto.destinationLongitude,
+      destinationAddress: getPriceDto.destinationAddress,
+      destinationLatitude: getPriceDto.destinationLatitude,
+    });
+    // calculate fee
+    const fee = getPriceDto.distance * category.basePrice.toNumber();
+    const estimatedFee =
+      fee > category.basePrice.toNumber() ? fee : category.basePrice.toNumber();
+
+    return {
+      estimatedFee,
+    };
+  }
+
+  @Post('request-ride')
+  async createCurrency(@Req() req, @Body() createRideDto: CreateRideDto) {
+    // todo calculate ride distance
+
+    // get the vehicle category
+    const category = await this.vehicleCategoriesService.findOne(
+      createRideDto.vehicleCategoryId,
+    );
+    createRideDto.distance = await getDistance({
+      pickupLongitude: createRideDto.pickupLongitude,
+      pickupLatitude: createRideDto.pickupLatitude,
+      pickupAddress: createRideDto.pickupAddress,
+      destinationLongitude: createRideDto.destinationLongitude,
+      destinationAddress: createRideDto.destinationAddress,
+      destinationLatitude: createRideDto.destinationLatitude,
+    });
+    // calculate fee
+    const fee = createRideDto.distance * category.basePrice.toNumber();
+    createRideDto.estimatedFee =
+      fee > category.basePrice.toNumber() ? fee : category.basePrice.toNumber();
+    const ride = await this.ridesService.create(createRideDto);
+    // check if the user is charging from balance
+    if (ride && createRideDto.paymentMethod == PaymentMethod.card) {
+      // create payment
+      const payment = await this.paymentsService.create({
+        currencyId: createRideDto.currencyId,
+        amount: createRideDto.estimatedFee,
+        userId: req.user.id,
+        gateway: 'paystack',
+        status: PaymentStatus.pending,
+        reference: randomUUID(),
+        rideId: ride.id,
+      });
+    }
+    // todo search for drivers in background
+    return this.ridesService.findOne(ride.id);
+  }
+
   @UsePipes(
     new ValidationPipe({
       transform: true,
@@ -111,9 +227,13 @@ export class AccountController {
   @Patch('rides/:id/cancel')
   async cancelRide(@Req() req, @Param('id') id: string) {
     const ride = await this.ridesService.findOneForUser(req.user.id, id);
-    if (!ride || !ride.vehicle || ride.vehicle.userId !== req.user.id) {
+    if (!ride) {
+      throw new HttpException('Ride not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (ride.userId !== req.user.id) {
       throw new HttpException(
-        'You cannot cancel this ride',
+        'You cannot cancel this ride.',
         HttpStatus.UNAUTHORIZED,
       );
     }

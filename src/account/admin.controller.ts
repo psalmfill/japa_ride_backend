@@ -1,19 +1,27 @@
+import { FileInterceptor } from '@nestjs/platform-express';
 import { VehicleCategoriesService } from './../services/vehicle-categories.service';
 import {
   Body,
   Controller,
   Delete,
+  FileTypeValidator,
   Get,
+  HttpException,
+  HttpStatus,
   Param,
+  ParseFilePipe,
   Patch,
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { RolesGuard } from 'src/auth/guards/admin-guard';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-guard';
 import { CreateCityDto } from 'src/dto/create-city.dto';
 import { CreateConfigDto } from 'src/dto/create-config.dto';
@@ -27,7 +35,7 @@ import { UpdateCityDto } from 'src/dto/update-city.dto';
 import { UpdateCountryDto } from 'src/dto/update-country.dto';
 import { UpdateStateDto } from 'src/dto/update-state.dto';
 import { UpdateVehicleCategoryDto } from 'src/dto/update-vehicle-category.dto';
-import { formatPagination } from 'src/helpers';
+import { editFileName, formatPagination } from 'src/helpers';
 import { ConfigsService } from 'src/services/configs.service';
 import { CurrenciesService } from 'src/services/currencies.service';
 import { LocationsService } from 'src/services/locations.service';
@@ -38,9 +46,11 @@ import { VehiclesService } from 'src/services/vehicles.service';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { UsersService } from 'src/users/users.service';
+import { diskStorage } from 'multer';
+import { existsSync, unlinkSync } from 'fs';
 
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin')
 export class AdminController {
   constructor(
@@ -88,22 +98,22 @@ export class AdminController {
     return this.usersService.create(createUserDto);
   }
 
-  @Get()
+  @Get('users')
   findAll() {
     return this.usersService.findAll();
   }
 
-  @Get(':id')
+  @Get('users/:id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('users/:id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 
-  @Delete(':id')
+  @Delete('users/:id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
@@ -122,7 +132,11 @@ export class AdminController {
 
   @Get('currencies/:id')
   findOneCurrency(@Param('id') id: string) {
-    return this.currenciesService.findOne(id);
+    try {
+      return this.currenciesService.findOne(id);
+    } catch (err) {
+      throw new HttpException(err, HttpStatus.NOT_FOUND);
+    }
   }
 
   @Patch('currencies/:id')
@@ -180,12 +194,12 @@ export class AdminController {
     return await this.locationsService.getStates(id);
   }
 
-  @Get('locations/countries/:id/states/:stateId')
+  @Get('locations/states/:stateId')
   findOneState(@Param('id') id: string, @Param('stateId') stateId: string) {
     return this.locationsService.findOneState(stateId);
   }
 
-  @Patch('locations/countries/:id/states/:stateId')
+  @Patch('locations/states/:stateId')
   updateState(
     @Param('id') id: string,
     @Param('stateId') stateId: string,
@@ -211,12 +225,12 @@ export class AdminController {
     return await this.locationsService.getCities(id);
   }
 
-  @Get('locations/states/:id/cities/:cityId')
+  @Get('locations/cities/:cityId')
   findOneCity(@Param('id') id: string, @Param('cityId') cityId: string) {
     return this.locationsService.findOneState(cityId);
   }
 
-  @Patch('locations/states/:id/cities/:cityId')
+  @Patch('locations/cities/:cityId')
   updateCity(
     @Param('id') id: string,
     @Param('cityId') cityId: string,
@@ -233,10 +247,40 @@ export class AdminController {
   // vehicle categories
 
   @Post('vehicle-categories')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: editFileName,
+      }),
+    }),
+  )
   createVehicleCategory(
     @Body() createVehicleCategoryDto: CreateVehicleCategoryDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          // new MaxFileSizeValidator({ maxSize: 1000 }),
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
   ) {
-    return this.vehicleCategoriesService.create(createVehicleCategoryDto);
+    try {
+      createVehicleCategoryDto.image = file.path;
+      return this.vehicleCategoriesService.create(createVehicleCategoryDto);
+    } catch (err) {
+      console.log(err);
+      if (existsSync(file.path)) {
+        unlinkSync(file.path);
+      }
+
+      throw new HttpException(
+        'Could not create vehicle category',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
   }
 
   @Get('vehicle-categories')
