@@ -55,9 +55,8 @@ export class RideGateway {
     await this.ridesService.update(ride.id, {
       vehicleId: null,
     });
-    // todo notify user of decline ride
-
-    //   todo find the nearest ride
+    // notify user of decline ride
+    this.server.to(ride.user.websocketId).emit('rideDeclined', rideActivity);
 
     return rideActivity;
   }
@@ -86,7 +85,8 @@ export class RideGateway {
     await this.ridesService.update(ride.id, {
       vehicleId: RideStatus.inProgress,
     });
-    // todo notify user of accepted ride
+    // notify user of accepted ride
+    this.server.to(ride.user.websocketId).emit('rideAccepted', rideActivity);
 
     return rideActivity;
   }
@@ -114,7 +114,8 @@ export class RideGateway {
       data.user.id,
       RideActivity.arrivedForPickup,
     );
-    // todo notify user of arrival for pickup
+    // notify user of arrival for pickup
+    this.server.to(ride.user.websocketId).emit('rideHasArrived', rideActivity);
 
     return rideActivity;
   }
@@ -139,7 +140,8 @@ export class RideGateway {
       data.user.id,
       RideActivity.startedRide,
     );
-    // todo notify user of arrival for pickup
+    // notify user of arrival for pickup
+    this.server.to(ride.user.websocketId).emit('rideStarted', rideActivity);
 
     return rideActivity;
   }

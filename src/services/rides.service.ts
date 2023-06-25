@@ -127,10 +127,14 @@ export class RidesService {
 
   findOneForUser(userId: string, id: string) {
     return this.prismaService.ride.findFirst({
-      where: { id: id },
+      where: { id, userId },
       include: {
         user: true,
-        vehicle: true,
+        vehicle: {
+          include: {
+            user: true,
+          },
+        },
         payments: true,
         currency: true,
         activities: {
@@ -144,10 +148,53 @@ export class RidesService {
   findOneForRider(userId: string, id: string) {
     return this.prismaService.ride.findFirst({
       where: {
+        id,
         vehicle: {
           userId,
         },
       },
+      include: {
+        user: true,
+        vehicle: true,
+        payments: true,
+        currency: true,
+        activities: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+  }
+  getRiderActiveRide(userId: string) {
+    return this.prismaService.ride.findFirstOrThrow({
+      where: {
+        vehicle: {
+          userId,
+        },
+        status: RideStatus.inProgress,
+      },
+
+      include: {
+        user: true,
+        vehicle: true,
+        payments: true,
+        currency: true,
+        activities: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+  }
+  getUserActiveRide(userId: string) {
+    return this.prismaService.ride.findFirstOrThrow({
+      where: {
+        userId,
+        status: RideStatus.inProgress,
+      },
+
       include: {
         user: true,
         vehicle: true,

@@ -1,3 +1,4 @@
+import { RideGateway } from './../gateways/ride.gateway';
 import { VehicleCategoriesService } from 'src/services/vehicle-categories.service';
 import { RideActivity, RidesService } from 'src/services/rides.service';
 import { CreateUserDto } from './../users/dto/create-user.dto';
@@ -47,6 +48,7 @@ export class AccountController {
     private readonly ridesService: RidesService,
     private readonly paymentsService: PaymentsService,
     private readonly vehicleCategoriesService: VehicleCategoriesService,
+    private readonly rideGateway: RideGateway,
   ) {}
 
   @Get('profile')
@@ -264,8 +266,16 @@ export class AccountController {
     await this.ridesService.update(id, {
       status: RideStatus.cancelled,
     });
-    // todo notify rider of cancelled ride
-
+    //  notify rider of cancelled ride
+    if (ride.vehicle) {
+      this.rideGateway.server
+        .to(ride.vehicle.user.websocketId)
+        .emit('rideCancelled', rideActivity);
+    }
     return rideActivity;
+  }
+  @Get('active-ride')
+  getActiveRide(@Req() req) {
+    return this.ridesService.getUserActiveRide(req.user.id);
   }
 }

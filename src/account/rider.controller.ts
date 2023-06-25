@@ -13,6 +13,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { RideStatus } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-guard';
 import { PaginationDto } from 'src/dto/pagination.dto';
+import { RideGateway } from 'src/gateways/ride.gateway';
 import { formatPagination } from 'src/helpers';
 import { RideActivity, RidesService } from 'src/services/rides.service';
 
@@ -20,7 +21,10 @@ import { RideActivity, RidesService } from 'src/services/rides.service';
 @UseGuards(JwtAuthGuard)
 @Controller('rider')
 export class RiderController {
-  constructor(private readonly ridesService: RidesService) {}
+  constructor(
+    private readonly ridesService: RidesService,
+    private readonly rideGateway: RideGateway,
+  ) {}
 
   @Get('rides')
   async getRides(@Req() req, @Query() pagination: PaginationDto) {
@@ -32,6 +36,10 @@ export class RiderController {
     return formatPagination(response, pagination);
   }
 
+  @Get('active-ride')
+  getActiveRide(@Req() req) {
+    return this.ridesService.getRiderActiveRide(req.user.id);
+  }
   @Get('rides/:id')
   getRide(@Req() req, @Param('id') id: string) {
     return this.ridesService.findOneForRider(req.user.id, id);
@@ -63,10 +71,10 @@ export class RiderController {
     await this.ridesService.update(id, {
       vehicleId: null,
     });
-    // todo notify user of decline ride
-
-    //   todo find the nearest ride
-
+    // notify user of decline ride
+    this.rideGateway.server
+      .to(ride.user.websocketId)
+      .emit('rideDeclined', rideActivity);
     return rideActivity;
   }
 
@@ -95,8 +103,10 @@ export class RiderController {
     const updatedRide = await this.ridesService.update(id, {
       status: RideStatus.inProgress,
     });
-    //  todo notify user of accepted ride
-
+    // notify user of accepted ride
+    this.rideGateway.server
+      .to(ride.user.websocketId)
+      .emit('rideAccepted', rideActivity);
     return updatedRide;
   }
 
@@ -122,8 +132,10 @@ export class RiderController {
       req.user.id,
       RideActivity.arrivedForPickup,
     );
-    //  todo notify user of arrival for pickup
-
+    //  notify user of arrival for pickup
+    this.rideGateway.server
+      .to(ride.user.websocketId)
+      .emit('riderHasArrived', rideActivity);
     return rideActivity;
   }
 
@@ -149,7 +161,10 @@ export class RiderController {
       req.user.id,
       RideActivity.startedRide,
     );
-    //  todo notify user of ride started
+    //  notify user of ride started
+    this.rideGateway.server
+      .to(ride.user.websocketId)
+      .emit('rideStarted', rideActivity);
 
     return rideActivity;
   }
