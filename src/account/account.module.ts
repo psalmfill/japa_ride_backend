@@ -15,6 +15,7 @@ import { CurrenciesService } from 'src/services/currencies.service';
 import { ConfigsService } from 'src/services/configs.service';
 import { RiderController } from './rider.controller';
 import { PaymentsService } from 'src/services/payments.service';
+import { RideGateway } from 'src/gateways/ride.gateway';
 
 @Module({
   imports: [AuthModule],
@@ -30,6 +31,7 @@ import { PaymentsService } from 'src/services/payments.service';
     CurrenciesService,
     ConfigsService,
     PaymentsService,
+    RideGateway,
   ],
   controllers: [AccountController, AdminController, RiderController],
 })
