@@ -27,6 +27,7 @@ async function bootstrap() {
     //  new AllExceptionsFilter(),
     new PrismaClientExceptionFilter(httpAdapter),
   );
+  app.enableCors();
   await app.listen(configService.get<number>('PORT', 3000));
 }
 bootstrap();
