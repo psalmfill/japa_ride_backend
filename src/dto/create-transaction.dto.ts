@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Genders, TransactionStatus } from '@prisma/client';
+import { Genders, TransactionStatus, TransactionType } from '@prisma/client';
 
 export class CreateTransactionDto {
   @ApiProperty()
@@ -9,7 +9,7 @@ export class CreateTransactionDto {
   reference: string;
 
   @ApiProperty()
-  tx_type: string;
+  tx_type: TransactionType;
 
   @ApiProperty()
   currencyId: string;

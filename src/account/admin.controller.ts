@@ -48,6 +48,7 @@ import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { UsersService } from 'src/users/users.service';
 import { diskStorage } from 'multer';
 import { existsSync, unlinkSync } from 'fs';
+import { TransactionsService } from 'src/services/transactions.service';
 
 @ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -63,6 +64,7 @@ export class AdminController {
     private readonly vehiclesService: VehiclesService,
     private readonly ridesService: RidesService,
     private readonly paymentsService: PaymentsService,
+    private readonly transactionsService: TransactionsService,
   ) {}
 
   @Post('configs')
@@ -395,5 +397,19 @@ export class AdminController {
   @Get('rides/:id')
   getRide(@Req() req, @Param('id') id: string) {
     return this.ridesService.findOne(id);
+  }
+  @Get('transactions')
+  transactions(@Req() req, @Query() pagination: PaginationDto) {
+    const response = this.transactionsService.findMany(
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+
+  @Get('transactions/:id')
+  transaction(@Req() req, @Param('id') id: string) {
+    const response = this.transactionsService.findOneForUser(req.user.id, id);
+    return response;
   }
 }

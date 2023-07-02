@@ -41,17 +41,11 @@ export class PaymentsService {
   }
 
   findOne(id: string) {
-    return this.prismaService.ride.findFirst({
+    return this.prismaService.payment.findFirst({
       where: { id: id },
       include: {
         user: true,
-        vehicle: true,
         currency: true,
-        activities: {
-          include: {
-            user: true,
-          },
-        },
       },
     });
   }

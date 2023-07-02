@@ -1,3 +1,4 @@
+import { TransactionsService } from './../services/transactions.service';
 import { RideGateway } from './../gateways/ride.gateway';
 import { VehicleCategoriesService } from 'src/services/vehicle-categories.service';
 import { RideActivity, RidesService } from 'src/services/rides.service';
@@ -49,6 +50,7 @@ export class AccountController {
     private readonly paymentsService: PaymentsService,
     private readonly vehicleCategoriesService: VehicleCategoriesService,
     private readonly rideGateway: RideGateway,
+    private readonly transactionsService: TransactionsService,
   ) {}
 
   @Get('profile')
@@ -277,5 +279,31 @@ export class AccountController {
   @Get('active-ride')
   getActiveRide(@Req() req) {
     return this.ridesService.getUserActiveRide(req.user.id);
+  }
+  @Get('balances')
+  getWalletBalances(@Req() req) {
+    return this.transactionsService.getUserWalletBalances(req.user.id);
+  }
+
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
+  @Get('transactions')
+  transactions(@Req() req, @Query() pagination: PaginationDto) {
+    const response = this.transactionsService.findManyForUser(
+      req.user.id,
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+
+  @Get('transactions/:id')
+  transaction(@Req() req, @Param('id') id: string) {
+    const response = this.transactionsService.findOneForUser(req.user.id, id);
+    return response;
   }
 }
