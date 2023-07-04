@@ -17,9 +17,10 @@ import { RiderController } from './rider.controller';
 import { PaymentsService } from 'src/services/payments.service';
 import { RideGateway } from 'src/gateways/ride.gateway';
 import { TransactionsService } from 'src/services/transactions.service';
+import { PaystackModule } from 'src/paystack/paystack.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, PaystackModule],
   providers: [
     AccountService,
     UsersService,

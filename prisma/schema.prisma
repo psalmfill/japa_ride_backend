@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
 }
 
 datasource db {
@@ -83,6 +84,7 @@ model User {
   reviews               Review[]
   driverData            DriverData?
   rides                 Ride[]
+  Card                  Card[]
 }
 
 model DriverData {
@@ -218,6 +220,7 @@ model Payment {
   currencyId    String
   amount        Decimal
   gateway       String
+  channel       String        @default("deposit")
   fee           Decimal       @default(0)
   discount      Decimal       @default(0)
   status        PaymentStatus @default(pending)
@@ -267,6 +270,22 @@ model Config {
   updatedAt DateTime @updatedAt
 }
 
+model Card {
+  id                String   @id @default(uuid())
+  user              User     @relation(fields: [userId], references: [id])
+  userId            String
+  authorizationCode String
+  bin               String
+  last4             String
+  bank              String
+  channel           String
+  signature         String
+  countryCode       String
+  provider          String   @default("paystack")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
 model Conversation {
   id           String    @id @default(uuid())
   messages     Message[]
@@ -307,6 +326,7 @@ enum TransactionStatus {
   cancelled
   declined
   completed
+  failed
 }
 
 enum PaymentMethod {
@@ -319,6 +339,7 @@ enum PaymentStatus {
   cancelled
   declined
   completed
+  failed
 }
 
 enum RideStatus {

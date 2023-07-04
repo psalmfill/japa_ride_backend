@@ -1,3 +1,4 @@
+import { HttpService, HttpModule } from '@nestjs/axios';
 import { PrismaService } from './prisma/prisma.service';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
@@ -28,12 +29,15 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { TasksService } from './services/tasks.service';
 import { RideGateway } from './gateways/ride.gateway';
 import { UsersService } from './users/users.service';
+import { PaystackModule } from './paystack/paystack.module';
+import { PaystackService } from './paystack/paystack.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     UsersModule,
     AuthModule,
+    HttpModule,
     PrismaModule,
     AccountModule,
     ScheduleModule.forRoot(),
@@ -74,6 +78,7 @@ import { UsersService } from './users/users.service';
         },
       }),
     }),
+    PaystackModule,
   ],
   controllers: [AppController],
   providers: [
@@ -94,6 +99,7 @@ import { UsersService } from './users/users.service';
     TasksService,
     RideGateway,
     UsersService,
+    PaystackService,
   ],
   exports: [PrismaService],
 })

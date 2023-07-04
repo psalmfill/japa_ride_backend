@@ -1,3 +1,4 @@
+import { CurrenciesService } from './../services/currencies.service';
 import { TransactionsService } from './../services/transactions.service';
 import { RideGateway } from './../gateways/ride.gateway';
 import { VehicleCategoriesService } from 'src/services/vehicle-categories.service';
@@ -31,7 +32,12 @@ import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { PaginationDto } from 'src/dto/pagination.dto';
 import { editFileName, formatPagination, getDistance } from 'src/helpers';
-import { PaymentMethod, PaymentStatus, RideStatus } from '@prisma/client';
+import {
+  PaymentMethod,
+  PaymentStatus,
+  RideStatus,
+  TransactionType,
+} from '@prisma/client';
 import { PaymentsService } from 'src/services/payments.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -39,6 +45,8 @@ import { existsSync, unlinkSync } from 'fs';
 import { CreateRideDto } from 'src/dto/create-ride.dto';
 import { randomUUID } from 'crypto';
 import { GetPriceDto } from 'src/dto/get-price.dto';
+import { FundWalletDto } from 'src/dto/fund-wallet.dto';
+import { PaystackService } from 'src/paystack/paystack.service';
 
 @ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard)
@@ -51,6 +59,8 @@ export class AccountController {
     private readonly vehicleCategoriesService: VehicleCategoriesService,
     private readonly rideGateway: RideGateway,
     private readonly transactionsService: TransactionsService,
+    private readonly currenciesService: CurrenciesService,
+    private readonly paystackService: PaystackService,
   ) {}
 
   @Get('profile')
@@ -280,7 +290,28 @@ export class AccountController {
   getActiveRide(@Req() req) {
     return this.ridesService.getUserActiveRide(req.user.id);
   }
-  @Get('balances')
+  @Post('fund-wallet')
+  async fundWallet(@Req() req, @Body() fundWalletDto: FundWalletDto) {
+    const currency = await this.currenciesService.findOneBySymbol('NGN');
+    fundWalletDto.currencyId = currency.id;
+    fundWalletDto.userId = req.user.id;
+    const payment = await this.paymentsService.fundWallet(fundWalletDto);
+    if (!payment) {
+      throw new HttpException(
+        'Fund wallet failed. try again',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    // create transaction on paystack
+    const tx = await this.paystackService.initializePayment({
+      amount: payment.amount.toNumber() * 100, // convert to kobo
+      email: payment.user.email,
+      reference: payment.reference,
+    });
+    return tx;
+  }
+
+  @Get('wallet-balances')
   getWalletBalances(@Req() req) {
     return this.transactionsService.getUserWalletBalances(req.user.id);
   }
@@ -292,8 +323,8 @@ export class AccountController {
     }),
   )
   @Get('transactions')
-  transactions(@Req() req, @Query() pagination: PaginationDto) {
-    const response = this.transactionsService.findManyForUser(
+  async transactions(@Req() req, @Query() pagination: PaginationDto) {
+    const response = await this.transactionsService.findManyForUser(
       req.user.id,
       +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
       +pagination.pageSize,
