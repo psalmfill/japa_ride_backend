@@ -7,10 +7,10 @@ export class SignUpDto {
   password: string;
 
   @ApiProperty()
-  firstName: string;
+  name: string;
 
   @ApiProperty()
-  lastName: string;
+  phoneNumber: string;
 
   @ApiProperty()
   accountType?: string;

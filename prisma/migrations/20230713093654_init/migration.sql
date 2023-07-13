@@ -8,13 +8,13 @@ CREATE TYPE "AccountTypes" AS ENUM ('user', 'rider', 'admin');
 CREATE TYPE "TransactionType" AS ENUM ('debit', 'credit');
 
 -- CreateEnum
-CREATE TYPE "TransactionStatus" AS ENUM ('pending', 'cancelled', 'declined', 'completed');
+CREATE TYPE "TransactionStatus" AS ENUM ('pending', 'cancelled', 'declined', 'completed', 'failed');
 
 -- CreateEnum
 CREATE TYPE "PaymentMethod" AS ENUM ('cash', 'card');
 
 -- CreateEnum
-CREATE TYPE "PaymentStatus" AS ENUM ('pending', 'cancelled', 'declined', 'completed');
+CREATE TYPE "PaymentStatus" AS ENUM ('pending', 'cancelled', 'declined', 'completed', 'failed');
 
 -- CreateEnum
 CREATE TYPE "RideStatus" AS ENUM ('pending', 'in progress', 'cancelled', 'declined', 'completed');
@@ -52,8 +52,7 @@ CREATE TABLE "PermissionOnRole" (
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
-    "firstName" TEXT NOT NULL,
-    "lastName" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "image" TEXT,
@@ -216,6 +215,7 @@ CREATE TABLE "Payment" (
     "currencyId" TEXT NOT NULL,
     "amount" DECIMAL(65,30) NOT NULL,
     "gateway" TEXT NOT NULL,
+    "channel" TEXT NOT NULL DEFAULT 'deposit',
     "fee" DECIMAL(65,30) NOT NULL DEFAULT 0,
     "discount" DECIMAL(65,30) NOT NULL DEFAULT 0,
     "status" "PaymentStatus" NOT NULL DEFAULT 'pending',
@@ -267,6 +267,24 @@ CREATE TABLE "Config" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Config_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Card" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "authorizationCode" TEXT NOT NULL,
+    "bin" TEXT NOT NULL,
+    "last4" TEXT NOT NULL,
+    "bank" TEXT NOT NULL,
+    "channel" TEXT NOT NULL,
+    "signature" TEXT NOT NULL,
+    "countryCode" TEXT NOT NULL,
+    "provider" TEXT NOT NULL DEFAULT 'paystack',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Card_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -439,6 +457,9 @@ ALTER TABLE "Review" ADD CONSTRAINT "Review_userId_fkey" FOREIGN KEY ("userId") 
 
 -- AddForeignKey
 ALTER TABLE "Review" ADD CONSTRAINT "Review_rideId_fkey" FOREIGN KEY ("rideId") REFERENCES "Ride"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Card" ADD CONSTRAINT "Card_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Message" ADD CONSTRAINT "Message_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

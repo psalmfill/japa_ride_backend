@@ -41,8 +41,7 @@ model PermissionOnRole {
 
 model User {
   id                    String         @id @default(uuid())
-  firstName             String
-  lastName              String
+  name                  String
   email                 String         @unique
   password              String
   image                 String?

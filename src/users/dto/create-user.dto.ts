@@ -3,10 +3,7 @@ import { Genders } from '@prisma/client';
 
 export class CreateUserDto {
   @ApiProperty()
-  firstName: string;
-
-  @ApiProperty()
-  lastName: string;
+  name: string;
 
   @ApiProperty()
   email: string;

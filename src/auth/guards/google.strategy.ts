@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-google-oauth20';
 import { classToPlain } from 'class-transformer';
+import { Profile } from 'passport';
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
@@ -25,23 +26,24 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     request: any,
     accessToken: string,
     refreshToken: string,
-    data,
+    profile: Profile,
     done: Function,
   ) {
     try {
-      const name = data.name ? data.name.split('') : null;
       const createUser = this.usersService.createOrUpdate({
-        provider: data.provider,
-        email: data.emails[0].value,
-        providerId: data.id,
+        provider: profile.provider,
+        email: profile.emails[0].value,
+        providerId: profile.id,
         referralCode: await this.usersService.generateReferralCode(),
         referrerId: null,
         password: null,
-        firstName: name ? name[0] : '',
-        lastName: name ? name[name.length - 1] : '',
+        name: `${profile?.name?.givenName} ${profile?.name?.middleName} ${profile?.name?.givenName}`.replace(
+          '  ',
+          '',
+        ),
       });
 
-      const user = await this.usersService.findOneByProviderId(data.id);
+      const user = await this.usersService.findOneByProviderId(profile.id);
       const payload = { user: user, userId: user.id };
       const jwt: string = this.jwtService.sign(payload);
       done(null, {

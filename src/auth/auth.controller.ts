@@ -61,6 +61,25 @@ export class AuthController {
       });
   }
 
+  @Get('facebook')
+  @UseGuards(AuthGuard('facebook'))
+  facebookLogin() {
+    // initiates the facebook
+    return;
+  }
+
+  @Get('facebook/callback')
+  @UseGuards(AuthGuard('facebook'))
+  facebookLoginCallback(@Req() req, @Res() res) {
+    // handles the facebook OAuth2 callback
+    const jwt = req.user;
+    if (jwt) res.send(jwt);
+    else
+      res.send({
+        message: 'error',
+      });
+  }
+
   @Post('verify-account')
   verifyAccount(@Body() verifyOtpDto: VerifyOtpDto) {
     const result = this.authService.verifyRegistrationOtp(verifyOtpDto);

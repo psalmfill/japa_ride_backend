@@ -1,11 +1,10 @@
 import { AccountTypes, Genders, User as UserModel } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime';
 export class User implements UserModel {
+  name: string;
   currentLatitude: Decimal;
   currentLongitude: Decimal;
   location: string;
-  firstName: string;
-  lastName: string;
   countryId: string;
   stateId: string;
   cityId: string;

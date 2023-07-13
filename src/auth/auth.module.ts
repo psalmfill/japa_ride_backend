@@ -10,6 +10,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './guards/jwt-strategy';
 import { GoogleStrategy } from './guards/google.strategy';
+import { FacebookStrategy } from './guards/facebook.strategy';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { GoogleStrategy } from './guards/google.strategy';
     PrismaService,
     JwtStrategy,
     GoogleStrategy,
+    FacebookStrategy,
     UsersService,
     EmailConfirmationService,
     EmailService,

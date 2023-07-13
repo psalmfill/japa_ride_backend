@@ -25,8 +25,8 @@ export class AuthService {
     const user = await this.usersService.create({
       email: signUpDto.email,
       password: await this.hashPassword(signUpDto.password),
-      firstName: signUpDto.firstName,
-      lastName: signUpDto.lastName,
+      name: signUpDto.name,
+      phoneNumber: signUpDto.phoneNumber,
     });
     // todo generate and send otp
     hotp.options = { digits: 4 };
