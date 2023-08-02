@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { AccountTypes } from '@prisma/client';
 export class SignUpDto {
   @ApiProperty()
   email: string;
@@ -13,5 +14,5 @@ export class SignUpDto {
   phoneNumber: string;
 
   @ApiProperty()
-  accountType?: string;
+  accountType?: AccountTypes;
 }

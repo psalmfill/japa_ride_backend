@@ -27,6 +27,7 @@ export class AuthService {
       password: await this.hashPassword(signUpDto.password),
       name: signUpDto.name,
       phoneNumber: signUpDto.phoneNumber,
+      accountType: signUpDto.accountType,
     });
     // todo generate and send otp
     hotp.options = { digits: 4 };

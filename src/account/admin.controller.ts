@@ -1,3 +1,4 @@
+import { PrismaService } from './../prisma/prisma.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { VehicleCategoriesService } from './../services/vehicle-categories.service';
 import {
@@ -49,6 +50,13 @@ import { UsersService } from 'src/users/users.service';
 import { diskStorage } from 'multer';
 import { existsSync, unlinkSync } from 'fs';
 import { TransactionsService } from 'src/services/transactions.service';
+import {
+  AccountTypes,
+  PaymentStatus,
+  RideStatus,
+  TransactionStatus,
+  TransactionType,
+} from '@prisma/client';
 
 @ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -65,7 +73,94 @@ export class AdminController {
     private readonly ridesService: RidesService,
     private readonly paymentsService: PaymentsService,
     private readonly transactionsService: TransactionsService,
+    private readonly prismaService: PrismaService,
   ) {}
+
+  @Get('analytics')
+  analytics() {
+    return {
+      users: {
+        totalDrivers: this.prismaService.user.count({
+          where: {
+            accountType: AccountTypes.rider,
+          },
+        }),
+        totalAdmins: this.prismaService.user.count({
+          where: {
+            accountType: AccountTypes.admin,
+          },
+        }),
+        totalCustomers: this.prismaService.user.count({
+          where: {
+            accountType: AccountTypes.user,
+          },
+        }),
+      },
+
+      transactions: {
+        totalCreditCount: this.prismaService.transaction.count({
+          where: {
+            tx_type: TransactionType.credit,
+            status: TransactionStatus.completed,
+          },
+        }),
+        totalCreditAmount: this.prismaService.transaction.aggregate({
+          where: {
+            tx_type: TransactionType.credit,
+            status: TransactionStatus.completed,
+          },
+        }),
+        totalDebitCount: this.prismaService.transaction.count({
+          where: {
+            tx_type: TransactionType.debit,
+            status: TransactionStatus.completed,
+          },
+        }),
+        totalDebitAmount: this.prismaService.transaction.aggregate({
+          where: {
+            tx_type: TransactionType.debit,
+            status: TransactionStatus.completed,
+          },
+        }),
+      },
+      totalPaymentsCount: {
+        totalCount: this.prismaService.payment.count({
+          where: {
+            status: PaymentStatus.completed,
+          },
+        }),
+        totalAmount: this.prismaService.transaction.aggregate({
+          where: {
+            status: PaymentStatus.completed,
+          },
+        }),
+      },
+      totalRidesCount: {
+        totalCount: this.prismaService.ride.count({}),
+        totalPending: this.prismaService.ride.count({
+          where: {
+            status: RideStatus.pending,
+          },
+        }),
+
+        totalCancelled: this.prismaService.ride.count({
+          where: {
+            status: RideStatus.cancelled,
+          },
+        }),
+        totalDeclined: this.prismaService.ride.count({
+          where: {
+            status: RideStatus.declined,
+          },
+        }),
+        totalCompleted: this.prismaService.ride.count({
+          where: {
+            status: RideStatus.completed,
+          },
+        }),
+      },
+    };
+  }
 
   @Post('configs')
   createConfig(@Body() createConfigDto: CreateConfigDto) {
@@ -100,11 +195,27 @@ export class AdminController {
     return this.usersService.create(createUserDto);
   }
 
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
   @Get('users')
-  findAll() {
-    return this.usersService.findAll();
+  async findAll(@Query() pagination: PaginationDto) {
+    const response = await this.usersService.findAll(
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
   }
 
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
   @Get('users/:id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
@@ -118,6 +229,55 @@ export class AdminController {
   @Delete('users/:id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
+  @Get('users/:id/transactions')
+  userTransactions(
+    @Param('id') id: string,
+    @Query() pagination: PaginationDto,
+  ) {
+    const response = this.transactionsService.findManyForUser(
+      id,
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
+  @Get('users/:id/payments')
+  userPayments(@Param('id') id: string, @Query() pagination: PaginationDto) {
+    const response = this.paymentsService.findManyForUser(
+      id,
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
+  @Get('users/:id/rides')
+  userRides(@Param('id') id: string, @Query() pagination: PaginationDto) {
+    const response = this.ridesService.findManyForUser(
+      id,
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
   }
 
   // currency

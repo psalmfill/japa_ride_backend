@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Genders } from '@prisma/client';
+import { AccountTypes, Genders } from '@prisma/client';
 
 export class CreateUserDto {
   @ApiProperty()
@@ -33,6 +33,7 @@ export class CreateUserDto {
 
   @ApiProperty()
   dateOfBirth?: Date;
+  accountType?: AccountTypes;
   emailVerifiedAt?: Date;
   phoneNumberVerifiedAt?: Date;
 }

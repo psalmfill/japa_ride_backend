@@ -51,8 +51,11 @@ export class UsersService {
     });
   }
 
-  findAll(): Promise<UserModel[]> {
-    return this.prismaService.user.findMany();
+  findAll(skip: number = 0, take: number = 10): Promise<UserModel[]> {
+    return this.prismaService.user.findMany({
+      skip: skip,
+      take: take,
+    });
   }
 
   findOne(id: string): Promise<UserModel> {
