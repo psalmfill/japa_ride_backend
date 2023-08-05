@@ -280,6 +280,50 @@ export class AdminController {
     return formatPagination(response, pagination);
   }
 
+  // RIDER
+  @Get('rider/:id/transactions')
+  riderTransactions(
+    @Param('id') id: string,
+    @Query() pagination: PaginationDto,
+  ) {
+    const response = this.transactionsService.findManyForUser(
+      id,
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
+  @Get('riders/:id/payments')
+  riderPayments(@Param('id') id: string, @Query() pagination: PaginationDto) {
+    const response = this.paymentsService.findManyForUser(
+      id,
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  )
+  @Get('riders/:id/rides')
+  riderRides(@Param('id') id: string, @Query() pagination: PaginationDto) {
+    const response = this.ridesService.findManyForRider(
+      id,
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+
   // currency
 
   @Post('currencies')

@@ -58,6 +58,25 @@ export class UsersService {
     });
   }
 
+  findRiders(skip: number = 0, take: number = 10): Promise<UserModel[]> {
+    return this.prismaService.user.findMany({
+      where: {
+        accountType: AccountTypes.rider,
+      },
+      skip: skip,
+      take: take,
+    });
+  }
+
+  findOneRider(id: string): Promise<UserModel> {
+    return this.prismaService.user.findFirst({
+      where: {
+        id,
+        accountType: AccountTypes.rider,
+      },
+    });
+  }
+
   findOne(id: string): Promise<UserModel> {
     return this.prismaService.user.findUniqueOrThrow({ where: { id } });
   }

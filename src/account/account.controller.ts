@@ -213,7 +213,6 @@ export class AccountController {
         rideId: ride.id,
       });
     }
-    // todo search for drivers in background
     return this.ridesService.findOne(ride.id);
   }
 

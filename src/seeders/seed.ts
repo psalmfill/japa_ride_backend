@@ -66,24 +66,27 @@ async function main() {
   await seedLocation();
   console.info('Completed Seeding location');
   console.info('Seeding admin');
-  const admin = await prisma.user.findFirst({
+  const admin = await prisma.user.upsert({
     where: {
       email: 'admin@japparide.com',
     },
+    create: {
+      email: 'admin@japparide.com',
+      name: 'Japparide Admin',
+      password: await bcrypt.hash('password', 12),
+      referralCode: 'japparide',
+      accountType: AccountTypes.admin,
+    },
+    update: {
+      email: 'admin@japparide.com',
+      name: 'Japparide Admin',
+      password: await bcrypt.hash('password', 12),
+      referralCode: 'japparide',
+      accountType: AccountTypes.admin,
+    },
   });
-  if (!admin) {
-    const admin = await prisma.user.create({
-      data: {
-        email: 'admin@japparide.com',
-        name: 'Japparide Admin',
-        password: await bcrypt.hash('password', 12),
-        referralCode: 'japparide',
-        accountType: AccountTypes.admin,
-      },
-    });
-  }
-  console.info('Completed Seeding currency');
   console.info('Seeding admin');
+  console.info('Completed Seeding currency');
   const currency = await prisma.currency.findFirst({
     where: {
       symbol: 'NGN',
