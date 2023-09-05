@@ -77,15 +77,15 @@ export class AdminController {
   ) {}
 
   @Get('analytics')
-  analytics() {
+  async analytics() {
     return {
       users: {
-        totalDrivers: this.prismaService.user.count({
+        totalDrivers: await this.prismaService.user.count({
           where: {
             accountType: AccountTypes.rider,
           },
         }),
-        totalAdmins: this.prismaService.user.count({
+        totalAdmins: await this.prismaService.user.count({
           where: {
             accountType: AccountTypes.admin,
           },
@@ -98,62 +98,80 @@ export class AdminController {
       },
 
       transactions: {
-        totalCreditCount: this.prismaService.transaction.count({
+        totalCreditCount: await this.prismaService.transaction.count({
           where: {
             tx_type: TransactionType.credit,
             status: TransactionStatus.completed,
           },
         }),
-        totalCreditAmount: this.prismaService.transaction.aggregate({
-          where: {
-            tx_type: TransactionType.credit,
-            status: TransactionStatus.completed,
-          },
-        }),
-        totalDebitCount: this.prismaService.transaction.count({
+        totalCreditAmount:
+          (
+            await this.prismaService.transaction.aggregate({
+              where: {
+                tx_type: TransactionType.credit,
+                status: TransactionStatus.completed,
+              },
+              _sum: {
+                amount: true,
+              },
+            })
+          )._sum.amount || 0,
+        totalDebitCount: await this.prismaService.transaction.count({
           where: {
             tx_type: TransactionType.debit,
             status: TransactionStatus.completed,
           },
         }),
-        totalDebitAmount: this.prismaService.transaction.aggregate({
-          where: {
-            tx_type: TransactionType.debit,
-            status: TransactionStatus.completed,
-          },
-        }),
+        totalDebitAmount:
+          (
+            await this.prismaService.transaction.aggregate({
+              where: {
+                tx_type: TransactionType.debit,
+                status: TransactionStatus.completed,
+              },
+              _sum: {
+                amount: true,
+              },
+            })
+          )._sum.amount || 0,
       },
       totalPaymentsCount: {
-        totalCount: this.prismaService.payment.count({
+        totalCount: await this.prismaService.payment.count({
           where: {
             status: PaymentStatus.completed,
           },
         }),
-        totalAmount: this.prismaService.transaction.aggregate({
-          where: {
-            status: PaymentStatus.completed,
-          },
-        }),
+        totalAmount:
+          (
+            await this.prismaService.transaction.aggregate({
+              where: {
+                status: PaymentStatus.completed,
+              },
+              _sum: {
+                amount: true,
+              },
+            })
+          )._sum.amount || 0,
       },
       totalRidesCount: {
-        totalCount: this.prismaService.ride.count({}),
-        totalPending: this.prismaService.ride.count({
+        totalCount: await this.prismaService.ride.count({}),
+        totalPending: await this.prismaService.ride.count({
           where: {
             status: RideStatus.pending,
           },
         }),
 
-        totalCancelled: this.prismaService.ride.count({
+        totalCancelled: await this.prismaService.ride.count({
           where: {
             status: RideStatus.cancelled,
           },
         }),
-        totalDeclined: this.prismaService.ride.count({
+        totalDeclined: await this.prismaService.ride.count({
           where: {
             status: RideStatus.declined,
           },
         }),
-        totalCompleted: this.prismaService.ride.count({
+        totalCompleted: await this.prismaService.ride.count({
           where: {
             status: RideStatus.completed,
           },
@@ -210,12 +228,6 @@ export class AdminController {
     return formatPagination(response, pagination);
   }
 
-  @UsePipes(
-    new ValidationPipe({
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  )
   @Get('users/:id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
@@ -229,6 +241,34 @@ export class AdminController {
   @Delete('users/:id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+
+  @Get('passengers')
+  async findPassengers(@Query() pagination: PaginationDto) {
+    const response = await this.usersService.findPassengers(
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+
+  @Get('passengers/:id')
+  findOnePassenger(@Param('id') id: string) {
+    return this.usersService.findOnePassenger(id);
+  }
+
+  @Get('drivers')
+  async findDriver(@Query() pagination: PaginationDto) {
+    const response = await this.usersService.findDrivers(
+      +pagination.page < 2 ? 0 : +pagination.page * +pagination.pageSize,
+      +pagination.pageSize,
+    );
+    return formatPagination(response, pagination);
+  }
+
+  @Get('drivers/:id')
+  findOneDriver(@Param('id') id: string) {
+    return this.usersService.findOneDriver(id);
   }
 
   @UsePipes(

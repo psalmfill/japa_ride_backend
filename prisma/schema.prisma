@@ -108,16 +108,17 @@ model Currency {
 }
 
 model VehicleCategory {
-  id         String    @id @default(uuid())
-  name       String    @unique
-  image      String
-  currency   Currency  @relation(fields: [currencyId], references: [id])
-  currencyId String
-  basePrice  Decimal
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  vehicles   Vehicle[]
-  rides      Ride[]
+  id                String    @id @default(uuid())
+  name              String    @unique
+  image             String
+  currency          Currency  @relation(fields: [currencyId], references: [id])
+  currencyId        String
+  basePrice         Decimal
+  pricePerKilometer Decimal   @default(100)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  vehicles          Vehicle[]
+  rides             Ride[]
 }
 
 model Vehicle {
@@ -192,6 +193,7 @@ model Ride {
   estimatedFee         Decimal
   paymentMethod        PaymentMethod   @default(cash)
   status               RideStatus      @default(pending)
+  paymentStatus        String          @default("unpaid")
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
   payments             Payment[]
@@ -331,6 +333,7 @@ enum TransactionStatus {
 enum PaymentMethod {
   cash
   card
+  wallet
 }
 
 enum PaymentStatus {

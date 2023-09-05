@@ -20,11 +20,13 @@ export class GetPriceDto {
   @ApiProperty()
   destinationLatitude: number;
 
-  @ApiProperty()
-  estimatedTime: number;
+  // @ApiProperty()
+  estimatedTime?: number;
 
-  @ApiProperty()
-  distance: number;
+  estimatedFee?: number;
+
+  // @ApiProperty()
+  distance?: number;
 
   @ApiProperty()
   destinationAddress: string;

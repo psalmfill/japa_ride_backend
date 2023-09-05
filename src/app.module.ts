@@ -31,6 +31,7 @@ import { RideGateway } from './gateways/ride.gateway';
 import { UsersService } from './users/users.service';
 import { PaystackModule } from './paystack/paystack.module';
 import { PaystackService } from './paystack/paystack.service';
+import { GoogleModule } from './google/google.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { PaystackService } from './paystack/paystack.service';
       }),
     }),
     PaystackModule,
+    GoogleModule,
   ],
   controllers: [AppController],
   providers: [

@@ -44,4 +44,6 @@ export class CreateRideDto {
   paymentMethod: PaymentMethod;
 
   status: RideStatus;
+
+  paymentStatus?: string;
 }

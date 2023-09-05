@@ -58,7 +58,26 @@ export class UsersService {
     });
   }
 
-  findRiders(skip: number = 0, take: number = 10): Promise<UserModel[]> {
+  findPassengers(skip: number = 0, take: number = 10): Promise<UserModel[]> {
+    return this.prismaService.user.findMany({
+      where: {
+        accountType: AccountTypes.user,
+      },
+      skip: skip,
+      take: take,
+    });
+  }
+
+  findOnePassenger(id: string): Promise<UserModel> {
+    return this.prismaService.user.findFirst({
+      where: {
+        id,
+        accountType: AccountTypes.user,
+      },
+    });
+  }
+
+  findDrivers(skip: number = 0, take: number = 10): Promise<UserModel[]> {
     return this.prismaService.user.findMany({
       where: {
         accountType: AccountTypes.rider,
@@ -68,7 +87,7 @@ export class UsersService {
     });
   }
 
-  findOneRider(id: string): Promise<UserModel> {
+  findOneDriver(id: string): Promise<UserModel> {
     return this.prismaService.user.findFirst({
       where: {
         id,
@@ -99,7 +118,7 @@ export class UsersService {
     return `This action removes a #${id} user`;
   }
 
-  async findRiderWithinRange(
+  async findDriverWithinRange(
     latitude: number,
     longitude: number,
     distanceInMile,

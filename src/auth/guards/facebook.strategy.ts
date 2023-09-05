@@ -28,7 +28,10 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     profile: Profile,
     done: Function,
   ) {
-    console.log(profile);
+    const stateParameter = request.query.state;
+    const additionalParams = JSON.parse(
+      Buffer.from(stateParameter, 'base64').toString('utf-8'),
+    );
     try {
       const createUser = await this.usersService.createOrUpdate({
         provider: profile.provider,
@@ -41,6 +44,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
           '  ',
           '',
         ),
+        accountType: additionalParams?.accountType,
       });
 
       const user = await this.usersService.findOneByProviderId(profile.id);

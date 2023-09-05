@@ -18,9 +18,10 @@ import { PaymentsService } from 'src/services/payments.service';
 import { RideGateway } from 'src/gateways/ride.gateway';
 import { TransactionsService } from 'src/services/transactions.service';
 import { PaystackModule } from 'src/paystack/paystack.module';
+import { GoogleModule } from 'src/google/google.module';
 
 @Module({
-  imports: [AuthModule, PaystackModule],
+  imports: [AuthModule, PaystackModule, GoogleModule],
   providers: [
     AccountService,
     UsersService,

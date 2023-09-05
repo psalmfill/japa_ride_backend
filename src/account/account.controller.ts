@@ -9,12 +9,14 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { AccountService } from './account.service';
 import { JwtAuthGuard } from './../auth/guards/jwt-guard';
 import {
+  BadRequestException,
   Body,
   Controller,
   FileTypeValidator,
   Get,
   HttpException,
   HttpStatus,
+  NotFoundException,
   Param,
   ParseFilePipe,
   Patch,
@@ -36,6 +38,7 @@ import {
   PaymentMethod,
   PaymentStatus,
   RideStatus,
+  TransactionStatus,
   TransactionType,
 } from '@prisma/client';
 import { PaymentsService } from 'src/services/payments.service';
@@ -46,7 +49,11 @@ import { CreateRideDto } from 'src/dto/create-ride.dto';
 import { randomUUID } from 'crypto';
 import { GetPriceDto } from 'src/dto/get-price.dto';
 import { FundWalletDto } from 'src/dto/fund-wallet.dto';
-import { PaystackService } from 'src/paystack/paystack.service';
+import {
+  PaystackService,
+  PaystackTransactionResponse,
+} from 'src/paystack/paystack.service';
+import { MapsService } from 'src/google/services/maps.service';
 
 @ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard)
@@ -61,6 +68,7 @@ export class AccountController {
     private readonly transactionsService: TransactionsService,
     private readonly currenciesService: CurrenciesService,
     private readonly paystackService: PaystackService,
+    private readonly mapsService: MapsService,
   ) {}
 
   @Get('profile')
@@ -161,28 +169,41 @@ export class AccountController {
     const category = await this.vehicleCategoriesService.findOne(
       getPriceDto.vehicleCategoryId,
     );
-    getPriceDto.distance = await getDistance({
-      pickupLongitude: getPriceDto.pickupLongitude,
-      pickupLatitude: getPriceDto.pickupLatitude,
-      pickupAddress: getPriceDto.pickupAddress,
-      destinationLongitude: getPriceDto.destinationLongitude,
-      destinationAddress: getPriceDto.destinationAddress,
-      destinationLatitude: getPriceDto.destinationLatitude,
-    });
+    // getPriceDto.distance = await getDistance({
+    //   pickupLongitude: getPriceDto.pickupLongitude,
+    //   pickupLatitude: getPriceDto.pickupLatitude,
+    //   pickupAddress: getPriceDto.pickupAddress,
+    //   destinationLongitude: getPriceDto.destinationLongitude,
+    //   destinationAddress: getPriceDto.destinationAddress,
+    //   destinationLatitude: getPriceDto.destinationLatitude,
+    // });
+    const distanceResponse = await this.mapsService.getDistanceMatrix(
+      [
+        getPriceDto.pickupAddress,
+        getPriceDto.pickupLatitude,
+        getPriceDto.destinationLongitude,
+      ],
+      [
+        getPriceDto.destinationAddress,
+        getPriceDto.destinationLatitude,
+        getPriceDto.destinationLongitude,
+      ],
+    );
+    getPriceDto.distance = distanceResponse.distance.value / 1000;
     // calculate fee
-    const fee = getPriceDto.distance * category.basePrice.toNumber();
+    let fee = getPriceDto.distance * category.pricePerKilometer.toNumber();
+    if (fee < category.basePrice.toNumber()) {
+      fee = category.basePrice.toNumber();
+    }
     const estimatedFee =
       fee > category.basePrice.toNumber() ? fee : category.basePrice.toNumber();
-
-    return {
-      estimatedFee,
-    };
+    getPriceDto.estimatedFee = estimatedFee;
+    getPriceDto.estimatedTime = distanceResponse.duration.text;
+    return getPriceDto;
   }
 
   @Post('request-ride')
-  async createCurrency(@Req() req, @Body() createRideDto: CreateRideDto) {
-    // todo calculate ride distance
-
+  async requestRide(@Req() req, @Body() createRideDto: CreateRideDto) {
     // get the vehicle category
     const category = await this.vehicleCategoriesService.findOne(
       createRideDto.vehicleCategoryId,
@@ -196,9 +217,27 @@ export class AccountController {
       destinationLatitude: createRideDto.destinationLatitude,
     });
     // calculate fee
-    const fee = createRideDto.distance * category.basePrice.toNumber();
-    createRideDto.estimatedFee =
+    const distanceResponse = await this.mapsService.getDistanceMatrix(
+      [
+        createRideDto.pickupAddress,
+        createRideDto.pickupLatitude,
+        createRideDto.destinationLongitude,
+      ],
+      [
+        createRideDto.destinationAddress,
+        createRideDto.destinationLatitude,
+        createRideDto.destinationLongitude,
+      ],
+    );
+    createRideDto.distance = distanceResponse.distance.value / 1000;
+    // calculate fee
+    let fee = createRideDto.distance * category.pricePerKilometer.toNumber();
+    if (fee < category.basePrice.toNumber()) {
+      fee = category.basePrice.toNumber();
+    }
+    const estimatedFee =
       fee > category.basePrice.toNumber() ? fee : category.basePrice.toNumber();
+    createRideDto.estimatedFee = estimatedFee;
     const ride = await this.ridesService.create(createRideDto);
     // check if the user is charging from balance
     if (ride && createRideDto.paymentMethod == PaymentMethod.card) {
@@ -212,8 +251,101 @@ export class AccountController {
         reference: randomUUID(),
         rideId: ride.id,
       });
+      // create transaction on paystack
+      const tx = await this.paystackService.initializePayment({
+        amount: payment.amount.toNumber() * 100, // convert to kobo
+        email: payment.user.email,
+        reference: payment.reference,
+      });
+      // return the payment for frontend to lunch payment modal
+
+      return tx;
+    } else if (createRideDto.paymentMethod == PaymentMethod.wallet) {
+      // check is user has sufficent balance
+      const currency = await this.currenciesService.findOneBySymbol('NGN');
+      const balance = await this.transactionsService.getUserCurrencyBalance(
+        req.user.id,
+        currency.id,
+      );
+      if (estimatedFee > balance) {
+        throw new HttpException(
+          'Insufficient Wallet balance to complete payment',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // create new
+      const transaction = await this.transactionsService.create({
+        amount: estimatedFee,
+        currencyId: currency.id,
+        userId: req.user.id,
+        tx_type: TransactionType.debit,
+        status: TransactionStatus.completed,
+        reference: randomUUID(),
+        channel: 'ride',
+      });
+
+      // create payment
+      const payment = await this.paymentsService.create({
+        currencyId: createRideDto.currencyId,
+        amount: createRideDto.estimatedFee,
+        userId: req.user.id,
+        gateway: 'wallet',
+        status: PaymentStatus.completed,
+        reference: randomUUID(),
+        rideId: ride.id,
+        transactionId: transaction.id,
+      });
+      await this.ridesService.update(ride.id, {
+        paymentStatus: 'paid',
+      });
     }
     return this.ridesService.findOne(ride.id);
+  }
+
+  @Get('rides/:id/complete-payment')
+  async completeRidePayment(
+    @Req() req,
+    @Param('id') id: string,
+    @Query() query,
+  ) {
+    const ride = await this.ridesService.findOneForUser(req.user.id, id);
+    if (!ride) {
+      throw new NotFoundException();
+    }
+    const response: PaystackTransactionResponse =
+      await this.paystackService.verifyTransaction(query.reference);
+    if (response.status) {
+      // find the payment
+      const payment = await this.paymentsService.findOneByReference(
+        response.data.reference,
+      );
+      if ((response.data.status = 'success')) {
+        const updatedPayment = await this.paymentsService.update(payment.id, {
+          status: PaymentStatus.completed,
+        });
+        if (payment.transactionId) {
+          // confirm thee transaction
+          await this.transactionsService.update(payment.transactionId, {
+            status: TransactionStatus.completed,
+          });
+        }
+        return await this.ridesService.update(ride.id, {
+          paymentStatus: 'paid',
+        });
+      } else if ((response.data.status = 'failed')) {
+        const updatedPayment = await this.paymentsService.update(payment.id, {
+          status: PaymentStatus.failed,
+        });
+        if (payment.transactionId) {
+          // confirm thee transaction
+          await this.transactionsService.update(payment.transactionId, {
+            status: TransactionStatus.failed,
+          });
+        }
+        throw new BadRequestException();
+      }
+    }
   }
 
   @UsePipes(

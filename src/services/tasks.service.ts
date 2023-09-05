@@ -23,9 +23,9 @@ export class TasksService {
 
     for (let ride of rides) {
       //   check if the ride has been assign a vehicle already
-      if (ride.vehicleId) continue;
+      if (ride.vehicleId || ride.paymentStatus == 'unpaid') continue;
       // get online driver within user range
-      const driver = await this.usersService.findRiderWithinRange(
+      const driver = await this.usersService.findDriverWithinRange(
         ride.pickupLatitude.toNumber(),
         ride.pickupLongitude.toNumber(),
         30,

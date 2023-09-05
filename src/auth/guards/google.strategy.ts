@@ -29,6 +29,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     profile: Profile,
     done: Function,
   ) {
+    const stateParameter = request.query.state;
+    const additionalParams = JSON.parse(
+      Buffer.from(stateParameter, 'base64').toString('utf-8'),
+    );
     try {
       const createUser = this.usersService.createOrUpdate({
         provider: profile.provider,
@@ -36,11 +40,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         providerId: profile.id,
         referralCode: await this.usersService.generateReferralCode(),
         referrerId: null,
-        password: null,
+        password: this.usersService.makeString(32),
         name: `${profile?.name?.givenName} ${profile?.name?.middleName} ${profile?.name?.givenName}`.replace(
           '  ',
           '',
         ),
+        accountType: additionalParams?.accountType,
       });
 
       const user = await this.usersService.findOneByProviderId(profile.id);

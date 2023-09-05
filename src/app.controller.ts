@@ -1,3 +1,4 @@
+import { getDistance } from 'src/helpers';
 import {
   Body,
   Controller,
@@ -25,6 +26,7 @@ import {
 } from './paystack/paystack.service';
 import { TransactionsService } from './services/transactions.service';
 import { PaymentStatus, TransactionStatus } from '@prisma/client';
+import { MapsService } from './google/services/maps.service';
 @Controller()
 export class AppController {
   constructor(
@@ -37,7 +39,16 @@ export class AppController {
     private readonly configsService: ConfigsService,
     private configService: ConfigService,
     private paystackService: PaystackService,
+    private mapService: MapsService,
   ) {}
+
+  @Get('')
+  getDistance() {
+    return this.mapService.getDistanceMatrix(
+      ['Ibom plaza, uyo, akwa ibom, nigeria'],
+      ['University of uyo, uyo, akwa ibom, Nigeria'],
+    );
+  }
 
   @UseGuards(PaystackWebHookGuard)
   @Post('paystack-webhook')
@@ -153,5 +164,14 @@ export class AppController {
   @Get('locations/states/:id/cities')
   async findAllCities(@Param('id') id: string) {
     return await this.locationsService.getCities(id);
+  }
+  @Get('vehicle-categories')
+  async findAllVehicleCategories() {
+    return await this.vehicleCategoriesService.findAll();
+  }
+
+  @Get('vehicle-categories/:id')
+  findOneVehicleCategory(@Param('id') id: string) {
+    return this.vehicleCategoriesService.findOne(id);
   }
 }

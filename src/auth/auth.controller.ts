@@ -9,6 +9,7 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -16,12 +17,17 @@ import {
 import { JwtAuthGuard } from './guards/jwt-guard';
 import { AuthGuard } from '@nestjs/passport';
 import { AccountTypes } from '@prisma/client';
+import { SocialSignInDto } from './dto/social-sign-in.dto';
+import * as passport from 'passport';
+import { ConfigService } from '@nestjs/config';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
     private emailConfirmationService: EmailConfirmationService,
+    private configService: ConfigService,
   ) {}
 
   @Post('sign-up')
@@ -30,7 +36,7 @@ export class AuthController {
     return result;
   }
 
-  @Post('rider/sign-up')
+  @Post('driver/sign-up')
   signUpRider(@Body() signUpDto: SignUpDto) {
     signUpDto.accountType = AccountTypes.rider;
     const result = this.authService.signUp(signUpDto);
@@ -45,8 +51,25 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  googleLogin() {
+  googleLogin(
+    @Req() req,
+    @Res() res: Response,
+    @Query() data: SocialSignInDto,
+  ) {
     // initiates the Google OAuth2 login flow
+    const additionalParams = {
+      accountType: data.accountType,
+    };
+    const stateParameter = Buffer.from(
+      JSON.stringify(additionalParams),
+    ).toString('base64');
+
+    const authenticateOptions = {
+      scope: ['email', 'profile'],
+      callbackURL: this.configService.get<string>('GOOGLE_CALLBACK_URL'),
+      state: JSON.stringify(stateParameter), // Convert the object to a string
+    };
+    passport.authenticate('google', authenticateOptions)(req, res);
   }
 
   @Get('google/callback')
@@ -63,9 +86,26 @@ export class AuthController {
 
   @Get('facebook')
   @UseGuards(AuthGuard('facebook'))
-  facebookLogin() {
+  facebookLogin(
+    @Req() req,
+    @Res() res: Response,
+    @Query() data: SocialSignInDto,
+  ) {
     // initiates the facebook
-    return;
+
+    const additionalParams = {
+      accountType: data.accountType,
+    };
+    const stateParameter = Buffer.from(
+      JSON.stringify(additionalParams),
+    ).toString('base64');
+
+    const authenticateOptions = {
+      scope: ['email', 'profile'],
+      callbackURL: this.configService.get<string>('FACEBOOK_CALLBACK_URL'),
+      state: JSON.stringify(stateParameter), // Convert the object to a string
+    };
+    passport.authenticate('facebook', authenticateOptions)(req, res);
   }
 
   @Get('facebook/callback')
