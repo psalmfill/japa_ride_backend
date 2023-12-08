@@ -653,7 +653,7 @@ export class AdminController {
 
   @Get('transactions/:id')
   transaction(@Req() req, @Param('id') id: string) {
-    const response = this.transactionsService.findOneForUser(req.user.id, id);
+    const response = this.transactionsService.findOne(id);
     return response;
   }
 }

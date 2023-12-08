@@ -19,71 +19,88 @@ export class RidesService {
   constructor(private prismaService: PrismaService) {}
 
   findMany(skip: number = 0, take: number = 10) {
-    return this.prismaService.ride.findMany({
-      include: {
-        user: true,
-        vehicle: true,
-        payments: true,
-        currency: true,
-        activities: {
-          include: {
-            user: true,
+    return this.prismaService.$transaction([
+      this.prismaService.ride.findMany({
+        include: {
+          user: true,
+          vehicle: true,
+          payments: true,
+          currency: true,
+          activities: {
+            include: {
+              user: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take,
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take,
+      }),
+      this.prismaService.ride.count(),
+    ]);
   }
 
   findManyForUser(userId: string, skip: number = 0, take: number = 10) {
-    return this.prismaService.ride.findMany({
-      where: { userId },
-      include: {
-        user: true,
-        vehicle: true,
-        payments: true,
-        currency: true,
-        activities: {
-          include: {
-            user: true,
+    return this.prismaService.$transaction([
+      this.prismaService.ride.findMany({
+        where: { userId },
+        include: {
+          user: true,
+          vehicle: true,
+          payments: true,
+          currency: true,
+          activities: {
+            include: {
+              user: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take,
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take,
+      }),
+      this.prismaService.ride.count({
+        where: { userId },
+      }),
+    ]);
   }
   findManyForRider(userId: string, skip: number = 0, take: number = 10) {
-    return this.prismaService.ride.findMany({
-      where: {
-        vehicle: {
-          userId,
-        },
-      },
-      include: {
-        user: true,
-        vehicle: true,
-        payments: true,
-        currency: true,
-        activities: {
-          include: {
-            user: true,
+    return this.prismaService.$transaction([
+      this.prismaService.ride.findMany({
+        where: {
+          vehicle: {
+            userId,
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take,
-    });
+        include: {
+          user: true,
+          vehicle: true,
+          payments: true,
+          currency: true,
+          activities: {
+            include: {
+              user: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take,
+      }),
+      this.prismaService.ride.count({
+        where: {
+          vehicle: {
+            userId,
+          },
+        },
+      }),
+    ]);
   }
 
   findManyByStatus(status: RideStatus) {

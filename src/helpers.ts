@@ -2,10 +2,13 @@ import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import { PaginationDto } from './dto/pagination.dto';
 
-export const formatPagination = (data, paginate: PaginationDto) => {
+export const formatPagination = (response, paginate: PaginationDto) => {
+  const [data, count] = response;
+
   return {
     data,
     meta: {
+      total: count,
       currentPage: +paginate.page,
       nextPage: +paginate.page + 1,
       previousPage: paginate.page - 1,

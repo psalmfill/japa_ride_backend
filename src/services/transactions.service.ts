@@ -9,34 +9,42 @@ export class TransactionsService {
   constructor(private prismaService: PrismaService) {}
 
   findMany(skip: number = 0, take: number = 10) {
-    return this.prismaService.transaction.findMany({
-      include: {
-        user: true,
-        currency: true,
-        payments: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take,
-    });
+    return this.prismaService.$transaction([
+      this.prismaService.transaction.findMany({
+        include: {
+          user: true,
+          currency: true,
+          payments: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take,
+      }),
+      this.prismaService.transaction.count(),
+    ]);
   }
 
   findManyForUser(userId: string, skip: number = 0, take: number = 10) {
-    return this.prismaService.transaction.findMany({
-      where: { userId },
-      include: {
-        user: true,
-        currency: true,
-        payments: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take,
-    });
+    return this.prismaService.$transaction([
+      this.prismaService.transaction.findMany({
+        where: { userId },
+        include: {
+          user: true,
+          currency: true,
+          payments: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take,
+      }),
+      this.prismaService.transaction.count({
+        where: { userId },
+      }),
+    ]);
   }
 
   findOne(id: string) {
