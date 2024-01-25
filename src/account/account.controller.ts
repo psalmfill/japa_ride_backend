@@ -166,9 +166,7 @@ export class AccountController {
 
   @Get('get-price')
   async getPrice(@Req() req, @Query() getPriceDto: GetPriceDto) {
-    const category = await this.vehicleCategoriesService.findOne(
-      getPriceDto.vehicleCategoryId,
-    );
+    const categories = await this.vehicleCategoriesService.findAll()
     // getPriceDto.distance = await getDistance({
     //   pickupLongitude: getPriceDto.pickupLongitude,
     //   pickupLatitude: getPriceDto.pickupLatitude,
@@ -180,26 +178,32 @@ export class AccountController {
     const distanceResponse = await this.mapsService.getDistanceMatrix(
       [
         getPriceDto.pickupAddress,
-        getPriceDto.pickupLatitude,
-        getPriceDto.destinationLongitude,
+        // getPriceDto.pickupLatitude,
+        // getPriceDto.pickupLongitude,
       ],
       [
         getPriceDto.destinationAddress,
-        getPriceDto.destinationLatitude,
-        getPriceDto.destinationLongitude,
+        // getPriceDto.destinationLatitude,
+        // getPriceDto.destinationLongitude,
       ],
     );
     getPriceDto.distance = distanceResponse.distance.value / 1000;
-    // calculate fee
+    
+    return categories.map((category:any)=> {
+       // calculate fee
     let fee = getPriceDto.distance * category.pricePerKilometer.toNumber();
     if (fee < category.basePrice.toNumber()) {
       fee = category.basePrice.toNumber();
     }
     const estimatedFee =
       fee > category.basePrice.toNumber() ? fee : category.basePrice.toNumber();
-    getPriceDto.estimatedFee = estimatedFee;
-    getPriceDto.estimatedTime = distanceResponse.duration.text;
-    return getPriceDto;
+      category.estimatedFee = estimatedFee;
+      category.estimatedTime = distanceResponse.duration.value;
+      category.estimatedTimeFormatted = distanceResponse.duration.text;
+      category.estimatedDistant = distanceResponse.distance.value
+      category.estimatedDistantFormatted = distanceResponse.distance.text
+      return category;
+    })
   }
 
   @Post('request-ride')

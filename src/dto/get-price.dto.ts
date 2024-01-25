@@ -3,9 +3,6 @@ import { Genders, PaymentMethod, RideStatus } from '@prisma/client';
 
 export class GetPriceDto {
   @ApiProperty()
-  vehicleCategoryId: string;
-
-  @ApiProperty()
   pickupLongitude: number;
 
   @ApiProperty()

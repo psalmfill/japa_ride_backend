@@ -21,7 +21,6 @@ export class MapsService extends Client {
     travelMode: TravelMode = TravelMode.driving,
     unitSystem: UnitSystem = UnitSystem.metric,
   ) {
-    console.log(origins, this.accessKey);
     try {
       const response: DistanceMatrixResponse = await this.distancematrix({
         params: {

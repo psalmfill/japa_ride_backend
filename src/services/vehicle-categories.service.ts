@@ -29,8 +29,8 @@ export class VehicleCategoriesService {
     });
   }
 
-  update(id: string, updateVehicleDto: UpdateVehicleCategoryDto) {
-    return this.prismaService.vehicleCategory.update({
+ async  update(id: string, updateVehicleDto: UpdateVehicleCategoryDto) {
+    return await this.prismaService.vehicleCategory.update({
       where: { id },
       data: updateVehicleDto,
     });

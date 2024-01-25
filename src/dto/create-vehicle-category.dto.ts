@@ -13,4 +13,7 @@ export class CreateVehicleCategoryDto {
 
   @ApiProperty()
   currencyId: string;
+
+  @ApiProperty()
+  pricePerKilometer: number;
 }
